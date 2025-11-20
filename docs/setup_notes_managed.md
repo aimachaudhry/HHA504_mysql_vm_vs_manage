@@ -1,4 +1,4 @@
-# MYSQL on Managed Service: Google Cloud Provider
+# MySQL on Managed Service: Google Cloud Provider
 
 ## In Cloud SQL create an instance:
 - Choose Sandbox version and MySQL 8.0
@@ -39,5 +39,6 @@ MAN_DB_NAME=class_db_netid
 
 - Once I tried to run the code to create the dataframe, I was having connectivity issues. I was getting a message that the server could not be connected and was timed out. As an attempt to resolve this, I edited the database in GCP to **allow unencrypted network traffic.** However, I continued to get the same message.
 -  <img width="778" height="40" alt="Screenshot 2025-11-19 at 9 24 30 PM" src="https://github.com/user-attachments/assets/9fe6244d-61fe-4491-bcf2-871abe450122" />
+
 
 
