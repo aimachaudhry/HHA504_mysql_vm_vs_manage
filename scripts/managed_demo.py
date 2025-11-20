@@ -3,10 +3,9 @@ from datetime import datetime
 import pandas as pd
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
-import urllib.parse
 
 # --- 0) Load environment ---
-load_dotenv(".env")  # reads .env in current working directory
+load_dotenv("aimadb/.env")  # reads .env in current working directory
 
 MAN_DB_HOST = os.getenv("MAN_DB_HOST")
 MAN_DB_PORT = os.getenv("MAN_DB_PORT", "3306")
@@ -19,23 +18,20 @@ print("[ENV] MAN_DB_PORT:", MAN_DB_PORT)
 print("[ENV] MAN_DB_USER:", MAN_DB_USER)
 print("[ENV] MAN_DB_NAME:", MAN_DB_NAME)
 
-# URL encode the password to handle special characters 
-encoded_password = urllib.parse.quote_plus(MAN_DB_PASS)
-
 # --- 1) Connect to server (no DB) and ensure database exists ---
-server_url = f"mysql+pymysql://{MAN_DB_USER}:{encoded_password}@{MAN_DB_HOST}:{MAN_DB_PORT}/"
-print("[STEP 1] Connecting to Managed MySQL (no DB):", server_url.replace(encoded_password, "*****"))
+server_url = f"mysql+pymysql://{MAN_DB_USER}:{MAN_DB_PASS}@{MAN_DB_HOST}:{MAN_DB_PORT}/{MAN_DB_NAME}?ssl=false"
+print("[STEP 1] Connecting to Managed MySQL (no DB):", server_url.replace(MAN_DB_PASS, "*****"))
 t0 = time.time()
 
-engine_server = create_engine(server_url, pool_pre_ping=True, connect_args={"ssl_disabled": True})
+engine_server = create_engine(server_url, pool_pre_ping=True)
 with engine_server.connect() as conn:
     conn.execute(text(f"CREATE DATABASE IF NOT EXISTS `{MAN_DB_NAME}`"))
     conn.commit()
 print(f"[OK] Ensured database `{MAN_DB_NAME}` exists on managed instance.")
 
 # --- 2) Connect to the target database ---
-db_url = f"mysql+pymysql://{MAN_DB_USER}:{encoded_password}@{MAN_DB_HOST}:{MAN_DB_PORT}/{MAN_DB_NAME}"
-engine = create_engine(db_url, pool_pre_ping=True, connect_args={"ssl_disabled": True})
+db_url = f"mysql+pymysql://{MAN_DB_USER}:{MAN_DB_PASS}@{MAN_DB_HOST}:{MAN_DB_PORT}/{MAN_DB_NAME}?ssl=false"
+engine = create_engine(db_url, pool_pre_ping=True)
 
 # --- 3) Create a DataFrame and write to a table ---
 table_name = "visits"
@@ -49,7 +45,8 @@ df = pd.DataFrame(
     ]
 )
 print("[STEP 3] Writing DataFrame to table:", table_name)
-df.to_sql(table_name, con=engine, if_exists="replace", index=False)
+with engine.begin() as conn:
+    df.to_sql(table_name, con=conn, if_exists="replace", index=False)
 print("[OK] Wrote DataFrame to table.")
 
 # --- 4) Read back a quick check ---
